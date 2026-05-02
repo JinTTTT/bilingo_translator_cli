@@ -1,13 +1,13 @@
-# bilingo_cli
+# bilingo_translator_cli
 
 A lightweight command-line translation tool that translates bidirectionally between **English and Chinese** using a local LLM via [Ollama](https://ollama.com). No internet required after setup — everything runs on your machine.
 
 ## Features
 
 - **Auto-detection** — just type; it figures out whether to translate English → Chinese or Chinese → English
-- **Grammar fix mode** — prefix with `-fix:` to correct grammar instead of translating
+- **Grammar fix mode** — prefix with `/fix` to correct grammar instead of translating
 - **Streaming output** — responses appear token-by-token, no waiting
-- **Color-coded output** — translations in yellow, grammar fixes in green
+- **Color-coded output** — translations in green, grammar fixes in yellow
 - **Scrollable history** — output stays in the terminal window as you work
 
 ## Requirements
@@ -67,7 +67,7 @@ Type text to translate, or use -fix: to correct grammar. Ctrl+C or 'exit' to qui
 > 我想学习更多关于机器学习的知识
 I want to learn more about machine learning.
 
-> -fix: what you wanted eat today dinner?
+> /fix what you wanted eat today dinner?
 What did you want to eat for dinner today?
 ```
 

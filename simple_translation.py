@@ -39,7 +39,7 @@ def translate(text: str) -> None:
         {"role": "user",   "content": user_msg},
     ]
 
-    print(f"{YELLOW}", end="", flush=True)
+    print(f"{GREEN}", end="", flush=True)
     for chunk in ollama.chat(model=MODEL, messages=messages, stream=True):
         token = chunk["message"]["content"]
         print(token, end="", flush=True)
@@ -51,7 +51,7 @@ def fix(text: str) -> None:
         {"role": "system", "content": FIX_SYSTEM_PROMPT},
         {"role": "user",   "content": f"Fix this text:\n\n{text}"},
     ]
-    print(f"{GREEN}", end="", flush=True)
+    print(f"{YELLOW}", end="", flush=True)
     for chunk in ollama.chat(model=MODEL, messages=messages, stream=True):
         print(chunk["message"]["content"], end="", flush=True)
     print(f"{RESET}\n")
@@ -59,7 +59,7 @@ def fix(text: str) -> None:
 
 def main() -> None:
     print(f"{BOLD}Simple Translation — English ↔ Chinese{RESET}")
-    print(f"{GRAY}Type text to translate, or use -fix: to correct grammar. Ctrl+C or 'exit' to quit.{RESET}\n")
+    print(f"{GRAY}Type text to translate, or use /fix to correct grammar. Ctrl+C or 'exit' to quit.{RESET}\n")
 
     while True:
         try:
@@ -74,7 +74,7 @@ def main() -> None:
             print("Goodbye!")
             sys.exit(0)
 
-        if text.lower().startswith("-fix:"):
+        if text.lower().startswith("/fix "):
             fix(text[5:].strip())
         else:
             translate(text)

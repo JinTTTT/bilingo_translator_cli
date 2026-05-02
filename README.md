@@ -6,6 +6,7 @@ A lightweight command-line translation tool that translates bidirectionally betw
 
 - **Auto-detection** — just type; it figures out whether to translate English → Chinese or Chinese → English
 - **Grammar fix mode** — prefix with `/fix` to correct grammar instead of translating
+- **One-shot mode** — pass text directly as an argument, get output, and exit
 - **Streaming output** — responses appear token-by-token, no waiting
 - **Color-coded output** — translations in green, grammar fixes in yellow
 - **Scrollable history** — output stays in the terminal window as you work
@@ -40,26 +41,28 @@ pip install ollama
 **4. Install the CLI command**
 
 ```bash
-chmod +x simple_translation.py
-sudo ln -sf "$(pwd)/simple_translation.py" /usr/local/bin/bilingo
+chmod +x translator.py
+sudo ln -sf "$(pwd)/translator.py" /usr/local/bin/translator
 ```
 
 Or without sudo, install to user PATH:
 
 ```bash
 mkdir -p ~/.local/bin
-ln -sf "$(pwd)/simple_translation.py" ~/.local/bin/bilingo
+ln -sf "$(pwd)/translator.py" ~/.local/bin/translator
 ```
 
 ## Usage
 
+**Interactive mode**
+
 ```bash
-bilingo
+translator
 ```
 
 ```
-Simple Translation — English ↔ Chinese
-Type text to translate, or use -fix: to correct grammar. Ctrl+C or 'exit' to quit.
+bilingo — English ↔ Chinese
+Type text to translate, or use /fix to correct grammar. Ctrl+C or 'exit' to quit.
 
 > The meeting has been postponed to next Monday.
 会议已推迟到下周一。
@@ -71,13 +74,34 @@ I want to learn more about machine learning.
 What did you want to eat for dinner today?
 ```
 
-Type `exit`, `quit`, or press `Ctrl+C` to quit.
+**One-shot mode**
+
+```bash
+translator Hello, how are you?
+translator /fix what do he do for living?
+```
+
+Type `exit`, `quit`, or press `Ctrl+C` to quit interactive mode.
+
+## Configuration
+
+Edit `config.json` in the project directory to change the model or language pair:
+
+```json
+{
+  "model": "qwen2.5:7b",
+  "languages": ["english", "chinese"]
+}
+```
+
+| Key | Description |
+|---|---|
+| `model` | Any Ollama model name |
+| `languages` | Two-element list — the language pair to translate between |
 
 ## Model
 
-Uses `qwen2.5:7b` by default — an Alibaba model with strong Chinese language support. To use a different model, edit the `MODEL` variable at the top of `simple_translation.py`.
-
-Recommended alternatives:
+Recommended models:
 
 | Model | VRAM | Notes |
 |---|---|---|

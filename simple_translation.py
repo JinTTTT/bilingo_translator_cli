@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import re
 import sys
+import readline  # noqa: F401 — enables cursor movement and history in input()
 import ollama
 
 MODEL = "qwen2.5:7b"

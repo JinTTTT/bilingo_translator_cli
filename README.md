@@ -90,7 +90,8 @@ Edit `config.json` in the project directory to change the model or language pair
 ```json
 {
   "model": "qwen2.5:7b",
-  "languages": ["english", "chinese"]
+  "languages": ["english", "chinese"],
+  "keep_alive": "30m"
 }
 ```
 
@@ -98,6 +99,7 @@ Edit `config.json` in the project directory to change the model or language pair
 |---|---|
 | `model` | Any Ollama model name |
 | `languages` | Two-element list — the language pair to translate between |
+| `keep_alive` | How long to keep the model in VRAM after last use (e.g. `"30m"`, `"1h"`, `"0"` to unload immediately) |
 
 ## Model
 

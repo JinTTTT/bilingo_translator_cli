@@ -47,44 +47,45 @@ def detect_direction(text: str, languages: list) -> tuple:
     return lang_a, lang_b
 
 
-def translate(text: str, languages: list, model: str) -> None:
+def translate(text: str, languages: list, model: str, keep_alive: str) -> None:
     src, dst = detect_direction(text, languages)
     messages = [
         {"role": "system", "content": SYSTEM_PROMPT},
         {"role": "user",   "content": f"Translate the following {src} text to {dst}:\n\n{text}"},
     ]
     print(f"{GREEN}", end="", flush=True)
-    for chunk in ollama.chat(model=model, messages=messages, stream=True):
+    for chunk in ollama.chat(model=model, messages=messages, stream=True, keep_alive=keep_alive):
         print(chunk["message"]["content"], end="", flush=True)
     print(f"{RESET}\n")
 
 
-def fix(text: str, model: str) -> None:
+def fix(text: str, model: str, keep_alive: str) -> None:
     messages = [
         {"role": "system", "content": FIX_SYSTEM_PROMPT},
         {"role": "user",   "content": f"Fix this text:\n\n{text}"},
     ]
     print(f"{YELLOW}", end="", flush=True)
-    for chunk in ollama.chat(model=model, messages=messages, stream=True):
+    for chunk in ollama.chat(model=model, messages=messages, stream=True, keep_alive=keep_alive):
         print(chunk["message"]["content"], end="", flush=True)
     print(f"{RESET}\n")
 
 
-def run(text: str, languages: list, model: str) -> None:
+def run(text: str, languages: list, model: str, keep_alive: str) -> None:
     if text.lower().startswith("/fix "):
-        fix(text[5:].strip(), model)
+        fix(text[5:].strip(), model, keep_alive)
     else:
-        translate(text, languages, model)
+        translate(text, languages, model, keep_alive)
 
 
 def main() -> None:
     config = load_config()
     model = config["model"]
     languages = config["languages"]
+    keep_alive = config.get("keep_alive", "5m")
     lang_a, lang_b = languages
 
     if len(sys.argv) > 1:
-        run(" ".join(sys.argv[1:]), languages, model)
+        run(" ".join(sys.argv[1:]), languages, model, keep_alive)
         sys.exit(0)
 
     print(f"{BOLD}bilingo — {lang_a.title()} ↔ {lang_b.title()}{RESET}")
@@ -103,7 +104,7 @@ def main() -> None:
             print("Goodbye!")
             sys.exit(0)
 
-        run(text, languages, model)
+        run(text, languages, model, keep_alive)
 
 
 if __name__ == "__main__":

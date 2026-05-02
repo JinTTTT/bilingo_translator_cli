@@ -1,4 +1,5 @@
 {
   "model": "qwen2.5:7b",
-  "languages": ["english", "chinese"]
+  "languages": ["english", "chinese"],
+  "keep_alive": "30m"
 }

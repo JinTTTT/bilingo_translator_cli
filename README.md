@@ -110,6 +110,12 @@ Recommended models:
 | `qwen2.5:7b` | ~4.7 GB | Default, fast, excellent Chinese |
 | `qwen2.5:14b` | ~8.5 GB | Higher quality, needs more VRAM |
 
+## After a System Restart
+
+- **Ollama** starts automatically on boot (installed as a systemd service)
+- **Model** is unloaded from VRAM on shutdown — the first translation after reboot will have a ~2-3 second delay while it reloads, then it's fast again
+- **Config, script, and symlink** all persist on disk — nothing needs to be reconfigured
+
 ## License
 
 MIT

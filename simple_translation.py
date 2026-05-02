@@ -1,10 +1,14 @@
 #!/usr/bin/env python3
+import json
 import re
 import sys
 import readline  # noqa: F401 — enables cursor movement and history in input()
+from pathlib import Path
 import ollama
 
-MODEL = "qwen2.5:7b"
+CONFIG_PATH = Path(__file__).resolve().parent / "config.json"
+
+CJK_LANGUAGES = {"chinese", "japanese", "korean", "mandarin", "cantonese"}
 
 SYSTEM_PROMPT = (
     "You are a professional translator. "
@@ -25,41 +29,54 @@ GREEN  = "\033[32m"
 BOLD   = "\033[1m"
 
 
-def is_chinese(text: str) -> bool:
-    return bool(re.search(r"[一-鿿㐀-䶿]", text))
+def load_config() -> dict:
+    with open(CONFIG_PATH) as f:
+        return json.load(f)
 
 
-def translate(text: str) -> None:
-    if is_chinese(text):
-        user_msg = f"Translate the following Chinese text to English:\n\n{text}"
-    else:
-        user_msg = f"Translate the following English text to Simplified Chinese:\n\n{text}"
+def is_cjk(text: str) -> bool:
+    return bool(re.search(r"[一-鿿㐀-䶿぀-ヿ]", text))
 
+
+def detect_direction(text: str, languages: list) -> tuple:
+    lang_a, lang_b = languages
+    if lang_b.lower() in CJK_LANGUAGES and is_cjk(text):
+        return lang_b, lang_a
+    if lang_a.lower() in CJK_LANGUAGES and is_cjk(text):
+        return lang_a, lang_b
+    return lang_a, lang_b
+
+
+def translate(text: str, languages: list, model: str) -> None:
+    src, dst = detect_direction(text, languages)
     messages = [
         {"role": "system", "content": SYSTEM_PROMPT},
-        {"role": "user",   "content": user_msg},
+        {"role": "user",   "content": f"Translate the following {src} text to {dst}:\n\n{text}"},
     ]
-
     print(f"{GREEN}", end="", flush=True)
-    for chunk in ollama.chat(model=MODEL, messages=messages, stream=True):
-        token = chunk["message"]["content"]
-        print(token, end="", flush=True)
+    for chunk in ollama.chat(model=model, messages=messages, stream=True):
+        print(chunk["message"]["content"], end="", flush=True)
     print(f"{RESET}\n")
 
 
-def fix(text: str) -> None:
+def fix(text: str, model: str) -> None:
     messages = [
         {"role": "system", "content": FIX_SYSTEM_PROMPT},
         {"role": "user",   "content": f"Fix this text:\n\n{text}"},
     ]
     print(f"{YELLOW}", end="", flush=True)
-    for chunk in ollama.chat(model=MODEL, messages=messages, stream=True):
+    for chunk in ollama.chat(model=model, messages=messages, stream=True):
         print(chunk["message"]["content"], end="", flush=True)
     print(f"{RESET}\n")
 
 
 def main() -> None:
-    print(f"{BOLD}Simple Translation — English ↔ Chinese{RESET}")
+    config = load_config()
+    model = config["model"]
+    languages = config["languages"]
+    lang_a, lang_b = languages
+
+    print(f"{BOLD}bilingo — {lang_a.title()} ↔ {lang_b.title()}{RESET}")
     print(f"{GRAY}Type text to translate, or use /fix to correct grammar. Ctrl+C or 'exit' to quit.{RESET}\n")
 
     while True:
@@ -76,9 +93,9 @@ def main() -> None:
             sys.exit(0)
 
         if text.lower().startswith("/fix "):
-            fix(text[5:].strip())
+            fix(text[5:].strip(), model)
         else:
-            translate(text)
+            translate(text, languages, model)
 
 
 if __name__ == "__main__":

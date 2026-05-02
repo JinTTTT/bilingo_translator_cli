@@ -70,11 +70,22 @@ def fix(text: str, model: str) -> None:
     print(f"{RESET}\n")
 
 
+def run(text: str, languages: list, model: str) -> None:
+    if text.lower().startswith("/fix "):
+        fix(text[5:].strip(), model)
+    else:
+        translate(text, languages, model)
+
+
 def main() -> None:
     config = load_config()
     model = config["model"]
     languages = config["languages"]
     lang_a, lang_b = languages
+
+    if len(sys.argv) > 1:
+        run(" ".join(sys.argv[1:]), languages, model)
+        sys.exit(0)
 
     print(f"{BOLD}bilingo — {lang_a.title()} ↔ {lang_b.title()}{RESET}")
     print(f"{GRAY}Type text to translate, or use /fix to correct grammar. Ctrl+C or 'exit' to quit.{RESET}\n")
@@ -92,10 +103,7 @@ def main() -> None:
             print("Goodbye!")
             sys.exit(0)
 
-        if text.lower().startswith("/fix "):
-            fix(text[5:].strip(), model)
-        else:
-            translate(text, languages, model)
+        run(text, languages, model)
 
 
 if __name__ == "__main__":

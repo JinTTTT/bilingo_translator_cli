@@ -1,121 +1,107 @@
-# bilingo_translator_cli
+# Bilingo
 
-A lightweight command-line translation tool that translates bidirectionally between **English and Chinese** using a local LLM via [Ollama](https://ollama.com). No internet required after setup — everything runs on your machine.
+Bilingo is a small Linux desktop translator for English and Chinese. It uses a
+local [Ollama](https://ollama.com/) model, so translated text stays on your
+machine.
 
-## Features
+The application intentionally supports only two workflows:
 
-- **Auto-detection** — just type; it figures out whether to translate English → Chinese or Chinese → English
-- **Grammar fix mode** — prefix with `/fix` to correct grammar instead of translating
-- **One-shot mode** — pass text directly as an argument, get output, and exit
-- **Streaming output** — responses appear token-by-token, no waiting
-- **Color-coded output** — translations in green, grammar fixes in yellow
-- **Scrollable history** — output stays in the terminal window as you work
+- Highlight text and press `Ctrl+Alt+E` to translate it immediately.
+- Press `Ctrl+Alt+I` to open an empty translation window.
+
+The compact window opens in the top-right corner, grows with its content, and
+hides when it loses focus. Use the pin button to keep it open. In the input
+field, press `Enter` to translate or `Shift+Enter` to insert a new line.
 
 ## Requirements
 
-- Ubuntu 22.04 (or any Linux distro)
-- [Ollama](https://ollama.com) installed and running
-- `qwen2.5:7b` model pulled
-- Python 3.10+
+- Linux with an X11 desktop session
+- Node.js 18 or newer and npm
+- Rust installed through [rustup](https://rustup.rs/)
+- Ollama running locally
+- The `qwen2.5:7b` model (about 4.7 GB on disk and approximately 5 GB of VRAM)
 
-## Setup
-
-**1. Install Ollama**
+On Ubuntu 22.04, install the native Tauri dependencies with:
 
 ```bash
-curl -fsSL https://ollama.com/install.sh | sh
+sudo apt update
+sudo apt install libwebkit2gtk-4.0-dev libgtk-3-dev librsvg2-dev libxdo-dev
 ```
 
-**2. Pull the model**
+Install Rust and the model if they are not already available:
 
 ```bash
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 ollama pull qwen2.5:7b
 ```
 
-**3. Install the Python dependency**
+## Run in development
+
+Install the project-local JavaScript dependencies once:
 
 ```bash
-pip install ollama
+npm install
 ```
 
-**4. Install the CLI command**
+Ensure Ollama is running, then start Bilingo:
 
 ```bash
-chmod +x translator.py
-sudo ln -sf "$(pwd)/translator.py" /usr/local/bin/translator
+ollama serve
+PATH="$HOME/.cargo/bin:$PATH" WEBKIT_DISABLE_DMABUF_RENDERER=1 npm run tauri dev
 ```
 
-Or without sudo, install to user PATH:
-
-```bash
-mkdir -p ~/.local/bin
-ln -sf "$(pwd)/translator.py" ~/.local/bin/translator
-```
-
-## Usage
-
-**Interactive mode**
-
-```bash
-translator
-```
-
-```
-bilingo — English ↔ Chinese
-Type text to translate, or use /fix to correct grammar. Ctrl+C or 'exit' to quit.
-
-> The meeting has been postponed to next Monday.
-会议已推迟到下周一。
-
-> 我想学习更多关于机器学习的知识
-I want to learn more about machine learning.
-
-> /fix what you wanted eat today dinner?
-What did you want to eat for dinner today?
-```
-
-**One-shot mode**
-
-```bash
-translator Hello, how are you?
-translator /fix what do he do for living?
-```
-
-Type `exit`, `quit`, or press `Ctrl+C` to quit interactive mode.
+If `ollama serve` reports that port `11434` is already in use, the service is
+already running. The Bilingo terminal must remain open while using the
+development build; stop it with `Ctrl+C`.
 
 ## Configuration
 
-Edit `config.json` in the project directory to change the model or language pair:
+Runtime settings are kept in [`src/config.js`](src/config.js):
 
-```json
-{
-  "model": "qwen2.5:7b",
-  "languages": ["english", "chinese"],
-  "keep_alive": "30m"
-}
+```js
+export const TRANSLATOR_CONFIG = {
+  host: 'http://127.0.0.1:11434',
+  model: 'qwen2.5:7b',
+  languages: ['english', 'chinese'],
+  keepAlive: '5m',
+};
 ```
 
-| Key | Description |
-|---|---|
-| `model` | Any Ollama model name |
-| `languages` | Two-element list — the language pair to translate between |
-| `keep_alive` | How long to keep the model in VRAM after last use (e.g. `"30m"`, `"1h"`, `"0"` to unload immediately) |
+`keepAlive` controls how long Ollama retains the model in VRAM after the last
+translation. With the default value, it unloads after approximately five
+minutes of inactivity.
 
-## Model
+## Checks and production build
 
-Recommended models:
+Run the frontend build and native Rust check together:
 
-| Model | VRAM | Notes |
-|---|---|---|
-| `qwen2.5:7b` | ~4.7 GB | Default, fast, excellent Chinese |
-| `qwen2.5:14b` | ~8.5 GB | Higher quality, needs more VRAM |
+```bash
+PATH="$HOME/.cargo/bin:$PATH" npm run check
+```
 
-## After a System Restart
+Build a distributable application with:
 
-- **Ollama** starts automatically on boot (installed as a systemd service)
-- **Model** is unloaded from VRAM on shutdown — the first translation after reboot will have a ~2-3 second delay while it reloads, then it's fast again
-- **Config, script, and symlink** all persist on disk — nothing needs to be reconfigured
+```bash
+PATH="$HOME/.cargo/bin:$PATH" npm run tauri build
+```
 
-## License
+Generated packages are written below `src-tauri/target/release/bundle/`.
 
-MIT
+## Project structure
+
+```text
+src/
+  components/TranslationWindow.jsx  Interface and window interaction
+  lib/translate.js                  Direction detection and Ollama streaming
+  config.js                         Model and window settings
+src-tauri/
+  src/main.rs                       Shortcuts and native window lifecycle
+  tauri.conf.json                   Tauri permissions and bundle settings
+```
+
+## License and attribution
+
+Bilingo is licensed under GPL-3.0 because its interface and desktop integration
+are derived from [Pot Desktop](https://github.com/pot-app/pot-desktop). See
+[`UPSTREAM.md`](UPSTREAM.md) for the exact upstream version and retained scope,
+and [`LICENSE`](LICENSE) for the full license text.

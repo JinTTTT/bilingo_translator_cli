@@ -1,0 +1,65 @@
+{
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "beforeBuildCommand": "npm run build",
+    "devPath": "http://localhost:1420",
+    "distDir": "../dist",
+    "withGlobalTauri": false
+  },
+  "package": {
+    "productName": "Bilingo",
+    "version": "0.1.0"
+  },
+  "tauri": {
+    "allowlist": {
+      "all": false,
+      "window": {
+        "all": false,
+        "hide": true,
+        "setFocus": true,
+        "setSize": true,
+        "startDragging": true
+      },
+      "clipboard": {
+        "all": false,
+        "writeText": true
+      },
+      "globalShortcut": {
+        "all": false
+      }
+    },
+    "bundle": {
+      "active": true,
+      "category": "Utility",
+      "copyright": "GPL-3.0",
+      "identifier": "io.github.bilingo.desktop",
+      "longDescription": "A lightweight local English and Chinese translator",
+      "shortDescription": "Local translation by selection or text input",
+      "targets": "all",
+      "icon": [
+        "icons/32x32.png",
+        "icons/128x128.png",
+        "icons/128x128@2x.png"
+      ]
+    },
+    "security": {
+      "csp": "default-src 'self'; connect-src http://127.0.0.1:11434 http://localhost:11434; img-src 'self' data:; style-src 'self' 'unsafe-inline';"
+    },
+    "windows": [
+      {
+        "title": "Bilingo",
+        "label": "translate",
+        "width": 300,
+        "height": 240,
+        "minWidth": 260,
+        "minHeight": 190,
+        "decorations": false,
+        "transparent": true,
+        "alwaysOnTop": true,
+        "skipTaskbar": true,
+        "resizable": false,
+        "visible": false
+      }
+    ]
+  }
+}

@@ -87,6 +87,20 @@ PATH="$HOME/.cargo/bin:$PATH" npm run tauri build
 
 Generated packages are written below `src-tauri/target/release/bundle/`.
 
+### Debian installation
+
+Build and install the Ubuntu/Debian package with:
+
+```bash
+PATH="$HOME/.cargo/bin:$PATH" npm run tauri build -- --bundles deb
+sudo apt install ./src-tauri/target/release/bundle/deb/bilingo_*.deb
+```
+
+The package installs an XDG autostart entry in `/etc/xdg/autostart`. Bilingo
+therefore starts hidden when the graphical session begins and waits for its
+global shortcuts. The package can be removed with `sudo apt remove
+bilingo`.
+
 ## Project structure
 
 ```text

@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=Bilingo
+Comment=Local English and Chinese translator
+TryExec=bilingo
+Exec=/usr/bin/env WEBKIT_DISABLE_DMABUF_RENDERER=1 bilingo
+Terminal=false
+NoDisplay=true
+StartupNotify=false
+X-GNOME-Autostart-enabled=true

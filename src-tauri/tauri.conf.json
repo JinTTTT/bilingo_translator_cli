@@ -36,6 +36,11 @@
       "longDescription": "A lightweight English and Chinese translator powered by DeepSeek",
       "shortDescription": "English and Chinese translation by selection or text input",
       "targets": "all",
+      "deb": {
+        "files": {
+          "/etc/xdg/autostart/bilingo.desktop": "linux/bilingo-autostart.desktop"
+        }
+      },
       "icon": [
         "icons/32x32.png",
         "icons/128x128.png",

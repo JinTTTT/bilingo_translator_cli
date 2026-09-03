@@ -18,6 +18,7 @@ struct TranslationRequest {
 #[derive(Default)]
 struct WindowPreferences {
     pinned: AtomicBool,
+    positioned: AtomicBool,
 }
 
 #[tauri::command]
@@ -48,7 +49,10 @@ fn show_translation(app: &tauri::AppHandle, text: String, auto_translate: bool) 
         return;
     };
 
-    position_top_right(&window);
+    let preferences = window.state::<WindowPreferences>();
+    if !preferences.positioned.swap(true, Ordering::Relaxed) {
+        position_top_right(&window);
+    }
     let _ = window.set_always_on_top(true);
 
     if let Err(error) = window.show() {

@@ -15,13 +15,13 @@ The complete GPL-3.0 license is preserved in `LICENSE`.
 - Translation-by-selection shortcut and selected-text capture
 - Translation-by-input shortcut
 - Compact translation window and its input/output presentation
-- Local Ollama communication and streaming output
+- Streaming translation output
 
 ## Removed scope
 
 - OCR and screenshot translation
 - Text-to-speech
-- Online translation providers
+- Additional translation providers and provider-selection UI
 - Dictionaries and vocabulary collection services
 - Translation history and backup/sync
 - Plugin marketplace and plugin loading

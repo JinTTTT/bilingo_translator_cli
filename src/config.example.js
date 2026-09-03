@@ -1,8 +1,7 @@
 export const TRANSLATOR_CONFIG = Object.freeze({
-  host: 'http://127.0.0.1:11434',
-  model: 'qwen2.5:7b',
-  languages: ['english', 'chinese'],
-  keepAlive: '5m',
+  apiKey: 'sk-your-api-key',
+  host: 'https://api.deepseek.com',
+  model: 'deepseek-v4-flash',
 });
 
 export const WINDOW_LAYOUT = Object.freeze({

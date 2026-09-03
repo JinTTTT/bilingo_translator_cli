@@ -82,7 +82,7 @@ export default function TranslationWindow() {
       }
     } catch (error) {
       if (requestId === requestIdRef.current) {
-        setStatus('Ollama unavailable');
+        setStatus('DeepSeek unavailable');
         setTranslatedText(error instanceof Error ? error.message : String(error));
       }
     } finally {
@@ -101,11 +101,14 @@ export default function TranslationWindow() {
       setStatus('Ready');
       setIsTranslating(false);
 
+      window.setTimeout(() => {
+        void appWindow.setFocus();
+      }, 80);
+
       if (payload?.autoTranslate && nextText.trim()) {
         void translate(nextText);
       } else {
         window.setTimeout(() => {
-          void appWindow.setFocus();
           sourceRef.current?.focus();
         }, 80);
       }

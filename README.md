@@ -1,8 +1,7 @@
 # Bilingo
 
-Bilingo is a small Linux desktop translator for English and Chinese. It uses a
-local [Ollama](https://ollama.com/) model, so translated text stays on your
-machine.
+Bilingo is a small Linux desktop translator for English and Chinese. It uses
+DeepSeek V4 Flash through the official DeepSeek API.
 
 The application intentionally supports only two workflows:
 
@@ -18,8 +17,7 @@ field, press `Enter` to translate or `Shift+Enter` to insert a new line.
 - Linux with an X11 desktop session
 - Node.js 18 or newer and npm
 - Rust installed through [rustup](https://rustup.rs/)
-- Ollama running locally
-- The `qwen2.5:7b` model (about 4.7 GB on disk and approximately 5 GB of VRAM)
+- A funded DeepSeek API account and API key
 
 On Ubuntu 22.04, install the native Tauri dependencies with:
 
@@ -28,11 +26,10 @@ sudo apt update
 sudo apt install libwebkit2gtk-4.0-dev libgtk-3-dev librsvg2-dev libxdo-dev
 ```
 
-Install Rust and the model if they are not already available:
+Install Rust if it is not already available:
 
 ```bash
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
-ollama pull qwen2.5:7b
 ```
 
 ## Run in development
@@ -43,33 +40,48 @@ Install the project-local JavaScript dependencies once:
 npm install
 ```
 
-Ensure Ollama is running, then start Bilingo:
+Create your local config, then paste your API key into `src/config.js`:
 
 ```bash
-ollama serve
+cp src/config.example.js src/config.js
+```
+
+The translator settings should look like this:
+
+```js
+export const TRANSLATOR_CONFIG = Object.freeze({
+  apiKey: 'sk-your-api-key',
+  host: 'https://api.deepseek.com',
+  model: 'deepseek-v4-flash',
+});
+```
+
+Then start Bilingo:
+
+```bash
 PATH="$HOME/.cargo/bin:$PATH" WEBKIT_DISABLE_DMABUF_RENDERER=1 npm run tauri dev
 ```
 
-If `ollama serve` reports that port `11434` is already in use, the service is
-already running. The Bilingo terminal must remain open while using the
-development build; stop it with `Ctrl+C`.
+Do not commit or share `src/config.js` after adding your API key. The Bilingo
+terminal must remain open while using the development build; stop it with
+`Ctrl+C`.
 
 ## Configuration
 
-Runtime settings are kept in [`src/config.js`](src/config.js):
+Runtime settings are kept locally in `src/config.js`; use
+[`src/config.example.js`](src/config.example.js) as the safe template:
 
 ```js
 export const TRANSLATOR_CONFIG = {
-  host: 'http://127.0.0.1:11434',
-  model: 'qwen2.5:7b',
-  languages: ['english', 'chinese'],
-  keepAlive: '5m',
+  apiKey: 'sk-your-api-key',
+  host: 'https://api.deepseek.com',
+  model: 'deepseek-v4-flash',
 };
 ```
 
-`keepAlive` controls how long Ollama retains the model in VRAM after the last
-translation. With the default value, it unloads after approximately five
-minutes of inactivity.
+DeepSeek thinking mode is disabled because translation does not require it.
+Text containing Chinese characters is translated to English; other text is
+translated from English to Simplified Chinese.
 
 ## Checks and production build
 
@@ -92,8 +104,9 @@ Generated packages are written below `src-tauri/target/release/bundle/`.
 ```text
 src/
   components/TranslationWindow.jsx  Interface and window interaction
-  lib/translate.js                  Direction detection and Ollama streaming
-  config.js                         Model and window settings
+  lib/translate.js                  Direction detection and stream handling
+  config.example.js                 Safe model and window settings template
+  config.js                         Local settings and API key (ignored by Git)
 src-tauri/
   src/main.rs                       Shortcuts and native window lifecycle
   tauri.conf.json                   Tauri permissions and bundle settings

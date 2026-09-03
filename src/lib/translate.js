@@ -1,13 +1,26 @@
+import { invoke } from '@tauri-apps/api/tauri';
+
 import { TRANSLATOR_CONFIG } from '../config.js';
 
 const CHINESE_CHARACTER_PATTERN = /[\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff]/u;
+const FIX_COMMAND_PATTERN = /^\/fix(?:\s+|$)/iu;
 
-const SYSTEM_PROMPT = [
+const TRANSLATION_PROMPT = [
   'You are a professional translator.',
   'Translate faithfully without adding or removing information.',
   'When translating to Chinese, use Simplified Chinese.',
   'Output only the translation.',
   'No explanations, no notes, no alternatives, no punctuation changes unless required.',
+].join(' ');
+
+const REFINEMENT_PROMPT = [
+  'You are an expert English and Chinese editor.',
+  'Rewrite the provided text in the same language.',
+  'Correct grammar, spelling, word choice, and sentence structure.',
+  'Make the result natural, clear, concise, and appropriate for professional communication such as email.',
+  'When the input is fragmented or rambling, preserve its central intended meaning and organize it into a coherent sentence or short passage.',
+  'Do not invent facts, names, numbers, promises, or details.',
+  'Output only the improved text with no explanations, notes, labels, or alternatives.',
 ].join(' ');
 
 export function detectTranslationDirection(text) {
@@ -16,30 +29,50 @@ export function detectTranslationDirection(text) {
     : { sourceLanguage: 'English', targetLanguage: 'Simplified Chinese' };
 }
 
-export async function streamTranslation(text, onUpdate) {
-  if (!TRANSLATOR_CONFIG.apiKey.trim()) {
-    throw new Error('Add your DeepSeek API key to src/config.js first.');
+export function isRefinementRequest(text) {
+  return FIX_COMMAND_PATTERN.test(text.trim());
+}
+
+export function prepareTextRequest(text) {
+  const normalizedText = text.trim();
+  if (isRefinementRequest(normalizedText)) {
+    const content = normalizedText.replace(FIX_COMMAND_PATTERN, '').trim();
+    if (!content) throw new Error('Enter text after /fix.');
+
+    const language = CHINESE_CHARACTER_PATTERN.test(content) ? 'Chinese' : 'English';
+    return {
+      mode: 'refine',
+      systemPrompt: REFINEMENT_PROMPT,
+      userPrompt: `Refine this ${language} text:\n\n${content}`,
+    };
   }
 
-  const { sourceLanguage, targetLanguage } = detectTranslationDirection(text);
+  const { sourceLanguage, targetLanguage } = detectTranslationDirection(normalizedText);
+  return {
+    mode: 'translate',
+    systemPrompt: TRANSLATION_PROMPT,
+    userPrompt: `Translate the following ${sourceLanguage} text to ${targetLanguage}:\n\n${normalizedText}`,
+  };
+}
+
+export async function streamTextResponse(text, onUpdate) {
+  const request = prepareTextRequest(text);
+  const apiKey = await invoke('get_api_key');
 
   const response = await fetch(`${TRANSLATOR_CONFIG.host}/chat/completions`, {
     method: 'POST',
     headers: {
-      Authorization: `Bearer ${TRANSLATOR_CONFIG.apiKey}`,
+      Authorization: `Bearer ${apiKey}`,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
       model: TRANSLATOR_CONFIG.model,
       messages: [
-        { role: 'system', content: SYSTEM_PROMPT },
-        {
-          role: 'user',
-          content: `Translate the following ${sourceLanguage} text to ${targetLanguage}:\n\n${text}`,
-        },
+        { role: 'system', content: request.systemPrompt },
+        { role: 'user', content: request.userPrompt },
       ],
       thinking: { type: 'disabled' },
-      temperature: 0.1,
+      temperature: request.mode === 'refine' ? 0.2 : 0.1,
       stream: true,
     }),
   });
@@ -61,7 +94,7 @@ export async function streamTranslation(text, onUpdate) {
   const reader = response.body.getReader();
   const decoder = new TextDecoder();
   let pending = '';
-  let translation = '';
+  let responseText = '';
 
   const consumeLine = (line) => {
     const trimmedLine = line.trim();
@@ -71,8 +104,8 @@ export async function streamTranslation(text, onUpdate) {
 
     const part = JSON.parse(data);
     if (part.error) throw new Error(part.error.message || String(part.error));
-    translation += part.choices?.[0]?.delta?.content ?? '';
-    onUpdate(translation);
+    responseText += part.choices?.[0]?.delta?.content ?? '';
+    onUpdate(responseText);
   };
 
   while (true) {
@@ -85,7 +118,7 @@ export async function streamTranslation(text, onUpdate) {
   }
 
   consumeLine(pending);
-  const result = translation.trim();
-  if (!result) throw new Error('DeepSeek returned an empty translation.');
+  const result = responseText.trim();
+  if (!result) throw new Error('DeepSeek returned an empty response.');
   return result;
 }

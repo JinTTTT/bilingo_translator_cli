@@ -5,7 +5,7 @@ import { appWindow, LogicalSize } from '@tauri-apps/api/window';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 
 import { TRANSLATOR_CONFIG, WINDOW_LAYOUT } from '../config.js';
-import { streamTranslation } from '../lib/translate.js';
+import { isRefinementRequest, streamTextResponse } from '../lib/translate.js';
 
 const ICON_PATHS = {
   arrow: <path d="M5 12h14m-6-6 6 6-6 6" />,
@@ -33,6 +33,7 @@ export default function TranslationWindow() {
   const sourceRef = useRef(null);
   const outputRef = useRef(null);
   const requestIdRef = useRef(0);
+  const isRefining = isRefinementRequest(sourceText);
 
   useLayoutEffect(() => {
     const fitTextarea = (element, maximumHeight) => {
@@ -67,11 +68,11 @@ export default function TranslationWindow() {
 
     const requestId = ++requestIdRef.current;
     setTranslatedText('');
-    setStatus('Translating…');
+    setStatus(isRefinementRequest(normalizedText) ? 'Refining…' : 'Translating…');
     setIsTranslating(true);
 
     try {
-      const result = await streamTranslation(normalizedText, (partialResult) => {
+      const result = await streamTextResponse(normalizedText, (partialResult) => {
         if (requestId === requestIdRef.current) {
           setTranslatedText(partialResult);
         }
@@ -155,7 +156,7 @@ export default function TranslationWindow() {
         >
           <Icon name="pin" />
         </button>
-        <span className="window-title" data-tauri-drag-region>English ↔ Chinese</span>
+        <span className="window-title" data-tauri-drag-region>Translate & Refine</span>
         <button className="icon-button" aria-label="Close" onClick={() => void appWindow.hide()}>
           <Icon name="close" />
         </button>
@@ -183,18 +184,18 @@ export default function TranslationWindow() {
               void translate();
             }
           }}
-          placeholder="Type or select text to translate…"
+          placeholder="Translate text, or use /fix to refine it…"
           spellCheck
         />
         <button className="translate-button" disabled={isTranslating || !sourceText.trim()} onClick={() => void translate()}>
-          <span>{isTranslating ? 'Translating…' : 'Translate'}</span>
+          <span>{isTranslating ? (isRefining ? 'Refining…' : 'Translating…') : (isRefining ? 'Refine' : 'Translate')}</span>
           <Icon name="arrow" />
         </button>
       </section>
 
       <section className="translation-card output-card">
         <div className="card-heading">
-          <span>Translation</span>
+          <span>{isRefining ? 'Refinement' : 'Translation'}</span>
           <button
             className="icon-button small"
             aria-label="Copy translation"
@@ -204,7 +205,7 @@ export default function TranslationWindow() {
             <Icon name="copy" />
           </button>
         </div>
-        <textarea ref={outputRef} value={translatedText} readOnly placeholder="Your translation will appear here." />
+        <textarea ref={outputRef} value={translatedText} readOnly placeholder="The result will appear here." />
       </section>
 
       <footer>

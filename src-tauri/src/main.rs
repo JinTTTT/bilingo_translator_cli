@@ -1,18 +1,29 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
+use std::fs;
+#[cfg(unix)]
+use std::os::unix::fs::PermissionsExt;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Duration;
 use tauri::{GlobalShortcutManager, Manager, PhysicalPosition, State, Window};
 
 const SELECTION_SHORTCUT: &str = "Ctrl+Alt+E";
 const INPUT_SHORTCUT: &str = "Ctrl+Alt+I";
+const API_CONFIG_DIRECTORY: &str = "bilingo";
+const API_CONFIG_FILENAME: &str = "config.json";
 
 #[derive(Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 struct TranslationRequest {
     text: String,
     auto_translate: bool,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct ApiConfiguration {
+    api_key: String,
 }
 
 #[derive(Default)]
@@ -24,6 +35,40 @@ struct WindowPreferences {
 #[tauri::command]
 fn set_pinned(pinned: bool, preferences: State<'_, WindowPreferences>) {
     preferences.pinned.store(pinned, Ordering::Relaxed);
+}
+
+#[tauri::command]
+fn get_api_key() -> Result<String, String> {
+    let config_directory = tauri::api::path::config_dir()
+        .ok_or_else(|| "Could not locate the user configuration directory.".to_string())?
+        .join(API_CONFIG_DIRECTORY);
+    let config_path = config_directory.join(API_CONFIG_FILENAME);
+
+    if !config_path.exists() {
+        fs::create_dir_all(&config_directory)
+            .map_err(|error| format!("Could not create the Bilingo config directory: {error}"))?;
+        fs::write(&config_path, "{\n  \"apiKey\": \"sk-your-api-key\"\n}\n")
+            .map_err(|error| format!("Could not create the Bilingo config file: {error}"))?;
+    }
+
+    #[cfg(unix)]
+    fs::set_permissions(&config_path, fs::Permissions::from_mode(0o600))
+        .map_err(|error| format!("Could not secure the Bilingo config file: {error}"))?;
+
+    let contents = fs::read_to_string(&config_path)
+        .map_err(|error| format!("Could not read {}: {error}", config_path.display()))?;
+    let configuration: ApiConfiguration = serde_json::from_str(&contents)
+        .map_err(|error| format!("Invalid JSON in {}: {error}", config_path.display()))?;
+    let api_key = configuration.api_key.trim();
+
+    if api_key.is_empty() || api_key == "sk-your-api-key" {
+        return Err(format!(
+            "Add your DeepSeek API key to {}.",
+            config_path.display()
+        ));
+    }
+
+    Ok(api_key.to_string())
 }
 
 fn position_top_right(window: &Window) {
@@ -74,7 +119,7 @@ fn show_translation(app: &tauri::AppHandle, text: String, auto_translate: bool) 
 fn main() {
     tauri::Builder::default()
         .manage(WindowPreferences::default())
-        .invoke_handler(tauri::generate_handler![set_pinned])
+        .invoke_handler(tauri::generate_handler![get_api_key, set_pinned])
         .setup(|app| {
             let selection_app = app.handle();
             app.global_shortcut_manager().register(SELECTION_SHORTCUT, move || {

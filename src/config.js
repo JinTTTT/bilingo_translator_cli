@@ -1,5 +1,4 @@
 export const TRANSLATOR_CONFIG = Object.freeze({
-  apiKey: 'sk-your-api-key',
   host: 'https://api.deepseek.com',
   model: 'deepseek-v4-flash',
 });

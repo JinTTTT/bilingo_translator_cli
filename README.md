@@ -3,10 +3,12 @@
 Bilingo is a small Linux desktop translator for English and Chinese. It uses
 DeepSeek V4 Flash through the official DeepSeek API.
 
-The application intentionally supports only two workflows:
+The application supports three workflows:
 
 - Highlight text and press `Ctrl+Alt+E` to translate it immediately.
 - Press `Ctrl+Alt+I` to open an empty translation window.
+- Prefix English or Chinese text with `/fix` to rewrite it naturally in the
+  same language, for example `/fix When did you gone?`.
 
 The compact window opens in the top-right corner, grows with its content, and
 hides when it loses focus. Use the pin button to keep it open. In the input
@@ -40,20 +42,19 @@ Install the project-local JavaScript dependencies once:
 npm install
 ```
 
-Create your local config, then paste your API key into `src/config.js`:
+Create your runtime config, then paste your API key into it:
 
 ```bash
-cp src/config.example.js src/config.js
+mkdir -p ~/.config/bilingo
+cp config.example.json ~/.config/bilingo/config.json
 ```
 
-The translator settings should look like this:
+The config should look like this:
 
-```js
-export const TRANSLATOR_CONFIG = Object.freeze({
-  apiKey: 'sk-your-api-key',
-  host: 'https://api.deepseek.com',
-  model: 'deepseek-v4-flash',
-});
+```json
+{
+  "apiKey": "sk-your-api-key"
+}
 ```
 
 Then start Bilingo:
@@ -62,26 +63,30 @@ Then start Bilingo:
 PATH="$HOME/.cargo/bin:$PATH" WEBKIT_DISABLE_DMABUF_RENDERER=1 npm run tauri dev
 ```
 
-Do not commit or share `src/config.js` after adding your API key. The Bilingo
-terminal must remain open while using the development build; stop it with
-`Ctrl+C`.
+Do not commit or share `~/.config/bilingo/config.json`. The Bilingo terminal
+must remain open while using the development build; stop it with `Ctrl+C`.
 
 ## Configuration
 
-Runtime settings are kept locally in `src/config.js`; use
-[`src/config.example.js`](src/config.example.js) as the safe template:
+Your API key is read at runtime from `~/.config/bilingo/config.json`; use
+[`config.example.json`](config.example.json) as the safe template:
 
-```js
-export const TRANSLATOR_CONFIG = {
-  apiKey: 'sk-your-api-key',
-  host: 'https://api.deepseek.com',
-  model: 'deepseek-v4-flash',
-};
+```json
+{
+  "apiKey": "sk-your-api-key"
+}
 ```
+
+The application creates this file automatically if it is missing. It reads the
+file for every request, so changing the key does not require rebuilding or
+restarting Bilingo.
 
 DeepSeek thinking mode is disabled because translation does not require it.
 Text containing Chinese characters is translated to English; other text is
-translated from English to Simplified Chinese.
+translated from English to Simplified Chinese. Text beginning with `/fix` is
+instead corrected and rewritten in its original language. The refinement mode
+also condenses fragmented or rambling text into clear, natural wording without
+inventing new details.
 
 ## Checks and production build
 
@@ -105,11 +110,11 @@ Generated packages are written below `src-tauri/target/release/bundle/`.
 src/
   components/TranslationWindow.jsx  Interface and window interaction
   lib/translate.js                  Direction detection and stream handling
-  config.example.js                 Safe model and window settings template
-  config.js                         Local settings and API key (ignored by Git)
+  config.js                         Non-secret model and window settings
 src-tauri/
   src/main.rs                       Shortcuts and native window lifecycle
   tauri.conf.json                   Tauri permissions and bundle settings
+config.example.json                 Safe runtime API-key template
 ```
 
 ## License and attribution
